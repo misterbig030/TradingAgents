@@ -55,17 +55,15 @@ _SECTIONS = (
         ("Fundamentals Analyst", "fundamentals.md", ("fundamentals_report",)),
     )),
     ("II. Research Team Decision", "2_research", (
-        ("Bull Researcher", "bull.md", ("investment_debate_state", "bull_history")),
-        ("Bear Researcher", "bear.md", ("investment_debate_state", "bear_history")),
+        # The debate as one transcript, round by round, speakers in a fixed order.
+        ("Research Debate", "debate.md", ("investment_debate_state", "history")),
         ("Research Manager", "manager.md", ("investment_plan",)),
     )),
     ("III. Trading Team Plan", "3_trading", (
         ("Trader", "trader.md", ("trader_investment_plan",)),
     )),
     ("IV. Risk Management Team Decision", "4_risk", (
-        ("Aggressive Analyst", "aggressive.md", ("risk_debate_state", "aggressive_history")),
-        ("Conservative Analyst", "conservative.md", ("risk_debate_state", "conservative_history")),
-        ("Neutral Analyst", "neutral.md", ("risk_debate_state", "neutral_history")),
+        ("Risk Debate", "debate.md", ("risk_debate_state", "history")),
     )),
     ("V. Portfolio Manager Decision", "5_portfolio", (
         ("Portfolio Manager", "decision.md", ("final_trade_decision",)),

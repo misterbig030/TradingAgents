@@ -1,6 +1,6 @@
-"""The first speaker in each debate must not rebut a nonexistent argument (#1176).
+"""An opening statement must not rebut a nonexistent argument (#1176).
 
-Each debate round's opening speaker receives an empty opponent response; the
+In a debate's opening round every speaker receives an empty opponent response; the
 prompt used to interpolate it into a "refute the opponent" instruction, so models
 fabricated the other side's position. All five debators (bull, bear, and the
 three risk analysts) now substitute an explicit opening marker when the opponent
@@ -34,13 +34,15 @@ def _capturing_llm(captured: dict):
     return llm
 
 
-def _investment_state(current_response):
+def _investment_state(opponent_response):
+    """Each researcher reads its opponent's argument from the previous round."""
     return {
         **_REPORTS,
         "count": 0,
         "investment_debate_state": {
             "history": "", "bull_history": "", "bear_history": "",
-            "current_response": current_response, "count": 0,
+            "current_bull_response": opponent_response,
+            "current_bear_response": opponent_response, "count": 0,
         },
     }
 

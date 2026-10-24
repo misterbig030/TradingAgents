@@ -400,10 +400,8 @@ def display_complete_report(final_state):
     if final_state.get("investment_debate_state"):
         debate = final_state["investment_debate_state"]
         research = []
-        if debate.get("bull_history"):
-            research.append(("Bull Researcher", debate["bull_history"]))
-        if debate.get("bear_history"):
-            research.append(("Bear Researcher", debate["bear_history"]))
+        if debate.get("history"):
+            research.append(("Research Debate", debate["history"]))
         if final_state.get("investment_plan"):
             research.append(("Research Manager", final_state["investment_plan"]))
         if research:
@@ -420,12 +418,8 @@ def display_complete_report(final_state):
     if final_state.get("risk_debate_state"):
         risk = final_state["risk_debate_state"]
         risk_reports = []
-        if risk.get("aggressive_history"):
-            risk_reports.append(("Aggressive Analyst", risk["aggressive_history"]))
-        if risk.get("conservative_history"):
-            risk_reports.append(("Conservative Analyst", risk["conservative_history"]))
-        if risk.get("neutral_history"):
-            risk_reports.append(("Neutral Analyst", risk["neutral_history"]))
+        if risk.get("history"):
+            risk_reports.append(("Risk Debate", risk["history"]))
         if risk_reports:
             console.print(Panel("[bold]IV. Risk Management Team Decision[/bold]", border_style="red"))
             for title, content in risk_reports:
@@ -492,12 +486,14 @@ def update_analyst_statuses(message_buffer, chunk, wall_time_tracker=None):
             message_buffer.update_agent_status(agent_name, "in_progress")
             all_filed = False
 
+    # Both researchers open the debate at the same time.
     if (
         all_filed
         and selected
         and message_buffer.agent_status.get("Bull Researcher") == "pending"
     ):
         message_buffer.update_agent_status("Bull Researcher", "in_progress")
+        message_buffer.update_agent_status("Bear Researcher", "in_progress")
 
 
 def extract_content_string(content):

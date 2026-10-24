@@ -30,6 +30,7 @@ from tradingagents.default_config import DEFAULT_CONFIG
 from tradingagents.graph.analyst_execution import (
     build_analyst_execution_plan,
 )
+from tradingagents.graph.conditional_logic import RISK_SPEAKERS as RISK_ANALYSTS
 from tradingagents.graph.trading_graph import TradingAgentsGraph
 
 
@@ -267,23 +268,15 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None):
                     wall_time_tracker=analyst_wall_time_tracker,
                 )
 
-                # Research Team - Handle Investment Debate State
+                # Research Team: the debate shows as one transcript, round by round.
                 if chunk.get("investment_debate_state"):
-                    debate_state = chunk["investment_debate_state"]
-                    bull_hist = debate_state.get("bull_history", "").strip()
-                    bear_hist = debate_state.get("bear_history", "").strip()
+                    transcript = (chunk["investment_debate_state"].get("history") or "").strip()
                     judge = (chunk.get("investment_plan") or "").strip()
 
-                    # Only update status when there's actual content
-                    if bull_hist or bear_hist:
+                    if transcript:
                         update_research_team_status("in_progress")
-                    if bull_hist:
                         message_buffer.update_report_section(
-                            "investment_plan", f"### Bull Researcher Analysis\n{bull_hist}"
-                        )
-                    if bear_hist:
-                        message_buffer.update_report_section(
-                            "investment_plan", f"### Bear Researcher Analysis\n{bear_hist}"
+                            "investment_plan", f"### Research Debate\n{transcript}"
                         )
                     if judge:
                         message_buffer.update_report_section(
@@ -299,42 +292,25 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None):
                     )
                     if message_buffer.agent_status.get("Trader") != "completed":
                         message_buffer.update_agent_status("Trader", "completed")
-                        message_buffer.update_agent_status("Aggressive Analyst", "in_progress")
+                        # The three risk analysts open their debate at the same time.
+                        for analyst in RISK_ANALYSTS:
+                            message_buffer.update_agent_status(analyst, "in_progress")
 
-                # Risk Management Team - Handle Risk Debate State
+                # Risk Management Team: one transcript, as for the research debate.
                 if chunk.get("risk_debate_state"):
-                    risk_state = chunk["risk_debate_state"]
-                    agg_hist = risk_state.get("aggressive_history", "").strip()
-                    con_hist = risk_state.get("conservative_history", "").strip()
-                    neu_hist = risk_state.get("neutral_history", "").strip()
+                    transcript = (chunk["risk_debate_state"].get("history") or "").strip()
                     judge = (chunk.get("final_trade_decision") or "").strip()
 
-                    if agg_hist:
-                        if message_buffer.agent_status.get("Aggressive Analyst") != "completed":
-                            message_buffer.update_agent_status("Aggressive Analyst", "in_progress")
+                    if transcript:
                         message_buffer.update_report_section(
-                            "final_trade_decision", f"### Aggressive Analyst Analysis\n{agg_hist}"
-                        )
-                    if con_hist:
-                        if message_buffer.agent_status.get("Conservative Analyst") != "completed":
-                            message_buffer.update_agent_status("Conservative Analyst", "in_progress")
-                        message_buffer.update_report_section(
-                            "final_trade_decision", f"### Conservative Analyst Analysis\n{con_hist}"
-                        )
-                    if neu_hist:
-                        if message_buffer.agent_status.get("Neutral Analyst") != "completed":
-                            message_buffer.update_agent_status("Neutral Analyst", "in_progress")
-                        message_buffer.update_report_section(
-                            "final_trade_decision", f"### Neutral Analyst Analysis\n{neu_hist}"
+                            "final_trade_decision", f"### Risk Debate\n{transcript}"
                         )
                     if judge and message_buffer.agent_status.get("Portfolio Manager") != "completed":
-                        message_buffer.update_agent_status("Portfolio Manager", "in_progress")
                         message_buffer.update_report_section(
                             "final_trade_decision", f"### Portfolio Manager Decision\n{judge}"
                         )
-                        message_buffer.update_agent_status("Aggressive Analyst", "completed")
-                        message_buffer.update_agent_status("Conservative Analyst", "completed")
-                        message_buffer.update_agent_status("Neutral Analyst", "completed")
+                        for analyst in RISK_ANALYSTS:
+                            message_buffer.update_agent_status(analyst, "completed")
                         message_buffer.update_agent_status("Portfolio Manager", "completed")
 
                 update_display(layout, stats_handler=stats_handler, start_time=start_time)

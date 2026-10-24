@@ -21,17 +21,17 @@ from tradingagents.agents import (
     create_trader,
 )
 from tradingagents.agents.analysts.turn import WRAP_UP
+from tradingagents.agents.debate import create_round_end
 from tradingagents.agents.state import AgentState
 
 from .analyst_execution import build_analyst_execution_plan
-from .conditional_logic import ConditionalLogic
+from .conditional_logic import RESEARCH_SPEAKERS, RISK_SPEAKERS, ConditionalLogic
 
 logger = logging.getLogger(__name__)
 
-# Every target a shared conditional router can return. Each edge driven by the
-# router maps all of them, so a fall-through return (e.g. under prompt/i18n/
-# refactor drift in the speaker labels) can never hit a missing path_map entry
-# and crash LangGraph mid-run (#1088).
+# Every target a round's router can return: all of the debate's speakers for
+# another round, or its judge. A return missing from its path map would crash
+# LangGraph mid-run (#1088).
 DEBATE_PATH_MAP = {
     "Bull Researcher": "Bull Researcher",
     "Bear Researcher": "Bear Researcher",
@@ -163,24 +163,26 @@ class GraphSetup:
             first_steps.append("Memory Log")
         for node in first_steps:
             workflow.add_edge(START, node)
-        workflow.add_edge(first_steps, "Bull Researcher")
-
-        # Both research-debate edges share the complete DEBATE_PATH_MAP (#1088).
-        for debate_node in ("Bull Researcher", "Bear Researcher"):
-            workflow.add_conditional_edges(
-                debate_node,
-                self.conditional_logic.should_continue_debate,
-                DEBATE_PATH_MAP,
-            )
+        # Each debate runs in simultaneous rounds: every speaker of a round
+        # answers the same transcript at once, then the round's end step adds
+        # their turns in a fixed order and starts the next round or hands over.
+        workflow.add_node("Research Round", create_round_end("investment_debate_state", ("Bull", "Bear")))
+        workflow.add_node("Risk Round", create_round_end(
+            "risk_debate_state", ("Aggressive", "Conservative", "Neutral")))
+        for speaker in RESEARCH_SPEAKERS:
+            workflow.add_edge(first_steps, speaker)
+        workflow.add_edge(list(RESEARCH_SPEAKERS), "Research Round")
+        # The router's every target is in the path map, so none can crash LangGraph mid-run (#1088).
+        workflow.add_conditional_edges(
+            "Research Round", self.conditional_logic.should_continue_debate, DEBATE_PATH_MAP,
+        )
         workflow.add_edge("Research Manager", "Trader")
-        workflow.add_edge("Trader", "Aggressive Analyst")
-        # All three risk edges share the complete RISK_ANALYSIS_PATH_MAP (#1088).
-        for risk_node in ("Aggressive Analyst", "Conservative Analyst", "Neutral Analyst"):
-            workflow.add_conditional_edges(
-                risk_node,
-                self.conditional_logic.should_continue_risk_analysis,
-                RISK_ANALYSIS_PATH_MAP,
-            )
+        for speaker in RISK_SPEAKERS:
+            workflow.add_edge("Trader", speaker)
+        workflow.add_edge(list(RISK_SPEAKERS), "Risk Round")
+        workflow.add_conditional_edges(
+            "Risk Round", self.conditional_logic.should_continue_risk_analysis, RISK_ANALYSIS_PATH_MAP,
+        )
 
         workflow.add_edge("Portfolio Manager", END)
 

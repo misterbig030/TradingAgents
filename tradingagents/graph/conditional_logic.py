@@ -1,5 +1,9 @@
 from tradingagents.agents.state import AgentState
 
+# The speakers of each debate's rounds; every round runs all of them at once.
+RESEARCH_SPEAKERS = ("Bull Researcher", "Bear Researcher")
+RISK_SPEAKERS = ("Aggressive Analyst", "Conservative Analyst", "Neutral Analyst")
+
 
 class ConditionalLogic:
     """Handles conditional logic for determining graph flow."""
@@ -9,25 +13,14 @@ class ConditionalLogic:
         self.max_debate_rounds = max_debate_rounds
         self.max_risk_discuss_rounds = max_risk_discuss_rounds
 
-    def should_continue_debate(self, state: AgentState) -> str:
-        """Determine if debate should continue."""
-
-        if (
-            state["investment_debate_state"]["count"] >= 2 * self.max_debate_rounds
-        ):  # max_debate_rounds turns each for bull and bear
+    def should_continue_debate(self, state: AgentState) -> str | list[str]:
+        """Another round with both researchers, or the Research Manager once the rounds are done."""
+        if state["investment_debate_state"]["count"] >= 2 * self.max_debate_rounds:
             return "Research Manager"
-        if state["investment_debate_state"]["current_response"].startswith("Bull"):
-            return "Bear Researcher"
-        return "Bull Researcher"
+        return list(RESEARCH_SPEAKERS)
 
-    def should_continue_risk_analysis(self, state: AgentState) -> str:
-        """Determine if risk analysis should continue."""
-        if (
-            state["risk_debate_state"]["count"] >= 3 * self.max_risk_discuss_rounds
-        ):  # max_risk_discuss_rounds turns each for the three risk analysts
+    def should_continue_risk_analysis(self, state: AgentState) -> str | list[str]:
+        """Another round with all three risk analysts, or the Portfolio Manager once the rounds are done."""
+        if state["risk_debate_state"]["count"] >= 3 * self.max_risk_discuss_rounds:
             return "Portfolio Manager"
-        if state["risk_debate_state"]["latest_speaker"].startswith("Aggressive"):
-            return "Conservative Analyst"
-        if state["risk_debate_state"]["latest_speaker"].startswith("Conservative"):
-            return "Neutral Analyst"
-        return "Aggressive Analyst"
+        return list(RISK_SPEAKERS)

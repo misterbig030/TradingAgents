@@ -4,16 +4,15 @@ from tradingagents.agents.context import (
     opponent_argument_or_opening,
     report_or_absent,
 )
+from tradingagents.agents.debate import record_turn
 
 
 def create_bear_researcher(llm):
     def bear_node(state) -> dict:
         investment_debate_state = state["investment_debate_state"]
-        history = investment_debate_state.get("history", "")
-        bear_history = investment_debate_state.get("bear_history", "")
-
+        history = investment_debate_state.get("history", "") or "(none yet: this is the opening round)"
         current_response = opponent_argument_or_opening(
-            investment_debate_state.get("current_response", ""), "bull analyst"
+            investment_debate_state.get("current_bull_response", ""), "bull analyst"
         )
         market_research_report = report_or_absent(state["market_report"], "market")
         sentiment_report = report_or_absent(state["sentiment_report"], "sentiment")
@@ -45,23 +44,13 @@ Market research report: {market_research_report}
 Social media sentiment report: {sentiment_report}
 Latest world affairs news: {news_report}
 {fundamentals_label}: {fundamentals_report}
-Conversation history of the debate: {history}
-Last bull argument: {current_response}
+The debate so far, round by round (both sides answer each round at the same time): {history}
+The bull analyst's argument from the previous round: {current_response}
 Use this information to deliver a compelling bear argument, refute the bull's claims, and engage in a dynamic debate that demonstrates the risks and weaknesses of investing in the {target_label}.
 """ + get_language_instruction()
 
         response = llm.invoke(prompt)
 
-        argument = f"Bear Analyst: {response.content}"
-
-        new_investment_debate_state = {
-            "history": history + "\n" + argument,
-            "bear_history": bear_history + "\n" + argument,
-            "bull_history": investment_debate_state.get("bull_history", ""),
-            "current_response": argument,
-            "count": investment_debate_state["count"] + 1,
-        }
-
-        return {"investment_debate_state": new_investment_debate_state}
+        return record_turn("investment_debate_state", "Bear", response.content)
 
     return bear_node

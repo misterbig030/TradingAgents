@@ -35,17 +35,18 @@ def get_language_instruction() -> str:
 
 
 def opponent_argument_or_opening(text: str, opponent: str) -> str:
-    """Opponent's latest argument, or an explicit opening marker when empty.
+    """Opponent's argument from the previous round, or an explicit opening marker.
 
-    The first speaker in each debate round receives an empty opponent response;
-    interpolating it into a "refute the opponent" prompt makes the model
-    fabricate the other side's position. Returning a clear "has not spoken yet"
+    In the opening round every side writes at the same time, so the opponent's
+    argument is empty; interpolating it into a "refute the opponent" prompt makes
+    the model fabricate the other side's position. A clear "has not spoken yet"
     marker instead lets it open with its own case (#1176).
     """
     text = (text or "").strip()
     if text:
         return text
-    return f"(The {opponent} has not spoken yet — open the debate with your own case.)"
+    return (f"(The {opponent} has not spoken yet: every side makes its opening statement at the"
+            " same time. Open with your own case; do not rebut arguments nobody has made.)")
 
 
 def _clean_identity_value(value: Any) -> str | None:

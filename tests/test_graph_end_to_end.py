@@ -149,7 +149,7 @@ def test_a_full_run_reaches_a_logged_decision(tmp_path, monkeypatch, offline, st
 
 @pytest.mark.unit
 def test_an_interrupted_run_resumes_from_its_checkpoint(tmp_path, monkeypatch, offline):
-    model = ScriptedModel(fail_at=12)            # past the analysts, before the decision
+    model = ScriptedModel(fail_at=12)            # a risk debate turn: past the analysts, before the decision
     graph = _graph(tmp_path, monkeypatch, model, checkpoint_enabled=True)
     with pytest.raises(RuntimeError, match="provider unavailable"):
         graph.propagate("NVDA", TRADE_DATE)
@@ -161,8 +161,11 @@ def test_an_interrupted_run_resumes_from_its_checkpoint(tmp_path, monkeypatch, o
     resumed_calls = len(model.calls) - calls_before
     full_run = ScriptedModel()
     _graph(tmp_path / "fresh", monkeypatch, full_run).propagate("NVDA", TRADE_DATE)
-    # The resumed run makes only the calls the interrupted one had not completed.
-    assert resumed_calls == len(full_run.calls) - (model.fail_at - 1)
+    # The resumed run makes only the calls the interrupted one had not completed:
+    # every call it started but the failed one, its debate round's other speakers
+    # included, finished and was kept.
+    assert calls_before > model.fail_at
+    assert resumed_calls == len(full_run.calls) - (calls_before - 1)
 
 
 @pytest.mark.unit

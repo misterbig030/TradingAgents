@@ -42,6 +42,10 @@ class Propagator:
                     "bear_history": "",
                     "history": "",
                     "current_response": "",
+                    "current_bull_response": "",
+                    "current_bear_response": "",
+                    "bull_turn": "",
+                    "bear_turn": "",
                     "count": 0,
                 }
             ),
@@ -55,6 +59,9 @@ class Propagator:
                     "current_aggressive_response": "",
                     "current_conservative_response": "",
                     "current_neutral_response": "",
+                    "aggressive_turn": "",
+                    "conservative_turn": "",
+                    "neutral_turn": "",
                     "count": 0,
                 }
             ),

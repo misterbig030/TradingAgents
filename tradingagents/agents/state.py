@@ -4,6 +4,15 @@ from langgraph.graph import MessagesState
 from typing_extensions import TypedDict
 
 
+def merge_debate(current: dict | None, update: dict | None) -> dict:
+    """Merge a debate update into the debate so far, key by key.
+
+    The speakers of a round answer at the same time, each writing only its own
+    turn; a plain value would refuse two writes in one step.
+    """
+    return {**(current or {}), **(update or {})}
+
+
 # Researcher team state
 class InvestDebateState(TypedDict):
     bull_history: Annotated[
@@ -13,8 +22,12 @@ class InvestDebateState(TypedDict):
         str, "Bearish Conversation history"
     ]
     history: Annotated[str, "Conversation history"]
-    current_response: Annotated[str, "Latest response"]
-    count: Annotated[int, "Length of the current conversation"]
+    current_response: Annotated[str, "The latest round of the debate"]
+    current_bull_response: Annotated[str, "The bull's argument in the latest round"]
+    current_bear_response: Annotated[str, "The bear's argument in the latest round"]
+    bull_turn: Annotated[str, "The bull's argument in the round in progress"]
+    bear_turn: Annotated[str, "The bear's argument in the round in progress"]
+    count: Annotated[int, "Turns taken so far: two per round"]
 
 
 # Risk management team state
@@ -39,7 +52,10 @@ class RiskDebateState(TypedDict):
     current_neutral_response: Annotated[
         str, "Latest response by the neutral analyst"
     ]
-    count: Annotated[int, "Length of the current conversation"]
+    aggressive_turn: Annotated[str, "The aggressive analyst's argument in the round in progress"]
+    conservative_turn: Annotated[str, "The conservative analyst's argument in the round in progress"]
+    neutral_turn: Annotated[str, "The neutral analyst's argument in the round in progress"]
+    count: Annotated[int, "Turns taken so far: three per round"]
 
 
 class AgentState(MessagesState):
@@ -56,7 +72,7 @@ class AgentState(MessagesState):
 
     # researcher team discussion step
     investment_debate_state: Annotated[
-        InvestDebateState, "Current state of the debate on if to invest or not"
+        InvestDebateState, "Current state of the debate on if to invest or not", merge_debate
     ]
     investment_plan: Annotated[str, "Investment plan from the Research Manager"]
 
@@ -64,7 +80,7 @@ class AgentState(MessagesState):
 
     # risk management team discussion step
     risk_debate_state: Annotated[
-        RiskDebateState, "Current state of the debate on evaluating risk"
+        RiskDebateState, "Current state of the debate on evaluating risk", merge_debate
     ]
     final_trade_decision: Annotated[str, "Final decision from the Portfolio Manager"]
     final_rating: Annotated[str, "The Portfolio Manager's 5-tier rating, or REVIEW when it has none"]
